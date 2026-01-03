@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import "./ChatbotPage.css";
 import ChatPanel from "./ChatPanel";
 import PreviewPanel from "./PreviewPanel";
-import API_URL from "../config";
 
 function ChatbotPage() {
   const navigate = useNavigate();
@@ -11,8 +10,6 @@ function ChatbotPage() {
   const [previewCode, setPreviewCode] = useState({ html: "", css: "", js: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [downloadReady, setDownloadReady] = useState(false);
-  const [backendReady, setBackendReady] = useState(false);
 
   // Check authentication on mount
   useEffect(() => {
@@ -59,7 +56,7 @@ function ChatbotPage() {
       }
 
       // Send to backend with JWT
-      const response = await fetch(`${API_URL}/api/chat`, {
+      const response = await fetch("http://localhost:5000/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -112,7 +109,7 @@ function ChatbotPage() {
     try {
       const token = localStorage.getItem("aidevs_token");
 
-      const response = await fetch(`${API_URL}/api/preview`, {
+      const response = await fetch("http://localhost:5000/api/preview", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -129,60 +126,17 @@ function ChatbotPage() {
           js: data.js,
         });
       }
-
-      // Also check status after fetching preview
-      checkStatus();
     } catch (error) {
       console.error("Preview fetch error:", error);
     }
   };
 
-  const checkStatus = async () => {
-    try {
-      const token = localStorage.getItem("aidevs_token");
-
-      const response = await fetch(`${API_URL}/api/status`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({}),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        setBackendReady(data.backend_ready);
-        setDownloadReady(data.download_ready);
-      }
-    } catch (error) {
-      console.error("Status check error:", error);
-    }
-  };
-
   const downloadCode = async () => {
-    // Check status first
-    if (!downloadReady) {
-      const statusMessage = !backendReady
-        ? "⏳ Backend code is still being generated. Please wait for the complete build to finish."
-        : "⚠️ Code is not ready for download yet.";
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: statusMessage,
-          timestamp: new Date(),
-        },
-      ]);
-      return;
-    }
-
     try {
       const token = localStorage.getItem("aidevs_token");
       const username = localStorage.getItem("aidevs_username");
 
-      const response = await fetch(`${API_URL}/api/download`, {
+      const response = await fetch("http://localhost:5000/api/download", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -201,31 +155,9 @@ function ChatbotPage() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-
-        // Show success message
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content:
-              "✅ Your complete website package (frontend + backend) has been downloaded successfully!",
-            timestamp: new Date(),
-          },
-        ]);
-      } else {
-        const data = await response.json();
-        throw new Error(data.error || "Download failed");
       }
     } catch (error) {
       console.error("Download error:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `❌ Download error: ${error.message}`,
-          timestamp: new Date(),
-        },
-      ]);
     }
   };
 
@@ -233,7 +165,7 @@ function ChatbotPage() {
     try {
       const token = localStorage.getItem("aidevs_token");
 
-      await fetch(`${API_URL}/api/reset`, {
+      await fetch("http://localhost:5000/api/reset", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -266,8 +198,6 @@ function ChatbotPage() {
           isLoading={isLoading}
           onReset={resetSession}
           onDownload={downloadCode}
-          downloadReady={downloadReady}
-          backendReady={backendReady}
         />
         <PreviewPanel
           html={previewCode.html}
